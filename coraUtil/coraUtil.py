@@ -20,7 +20,14 @@ import time
 import json
 import re
 
+
+here = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+with open(os.path.join(here, 'VERSION')) as version_file:
+    version = version_file.read().strip()
+
 __version__ = '0.0.1'
+__version__ = version
 
 logger = logging.getLogger(__name__)
 
@@ -463,7 +470,7 @@ class coraUtil():
 
 #---------------------------------------------------------------------------#
 if __name__ == '__main__':
-    fileConfig('cora.ini')
+    fileConfig(os.path.join(os.path.dirname(__file__), 'cora.ini'))
     logger = logging.getLogger('cora')
     # logger.setLevel('DEBUG')
 
