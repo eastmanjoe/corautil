@@ -10,16 +10,28 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
-from os import path
+import os
+import re
 
-here = path.abspath(path.dirname(__file__))
+
+def read(*names, **kwargs):
+    with open(
+        os.path.join(os.path.dirname(__file__), *names),
+        encoding=kwargs.get("encoding", "utf8")
+    ) as fp:
+        return fp.read()
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
-
-with open(path.join(here, 'VERSION')) as version_file:
-    version = version_file.read().strip()
 
 setup(
     name='coraUtil',
@@ -28,7 +40,7 @@ setup(
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
     # version='1.0.0',
-    version=version,
+    version=find_version('coraUtil', '__init__.py'),
 
     description='Campbell Scientific Cora Utility',
     long_description=long_description,

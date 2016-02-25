@@ -16,13 +16,6 @@ import logging
 import time
 import re
 
-here = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
-with open(os.path.join(here, 'VERSION')) as version_file:
-    version = version_file.read().strip()
-
-__version__ = version
-
 logger = logging.getLogger(__name__)
 
 
@@ -135,11 +128,11 @@ class CoraUtil:
         cora_connect += self.server_ip + ' '
         cora_connect += '--name={' + self.username + '} '
         cora_connect += '--password={' + self.password + '} '
-        cora_connect += '--server-port=' + str(self.server_port) + r';\n'
-        cora_connect += 'lock-network;\n'
+        cora_connect += '--server-port=' + str(self.server_port) + ';\n'
+        cora_connect += 'lock-network;'
 
         with open('tmp.cora', 'w') as fid:
-            fid.write(cora_connect)
+            fid.write(cora_connect + '\n')
             fid.write(command_str + '\n')
             fid.write('unlock-network;\nexit;\n')
 
@@ -155,17 +148,19 @@ class CoraUtil:
         command = command_str.partition(' ')
 
         error = re.compile("-" + command[0].strip(';') + ",(?P<error_message>.+)")
+        response = re.compile("\*" + command[0].strip(';') + "\n{\n(?P<response>.+)\n}\n")
 
         # write the cora commands to a file to make executing them easier
-        self.write_cora_file(command_str + ';')
+        self.write_cora_file(command_str)
 
         # execute the cora command
         logger.debug('executing cora command')
         cora_output = subprocess.check_output(cora)
 
-        cora_output = re.sub(r'\r', '\n', cora_output)
-
+        # cora_output = re.sub(r'\r', '\n', cora_output)
         logger.debug('output of cora is: {}'.format(cora_output))
+
+        # os.remove('tmp.cora')
 
         for line in cora_output.split('\n'):
 
@@ -416,9 +411,6 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--password', help='password for LoggerNet server', default=''
-    )
-    parser.add_argument(
-        '-v', '--version', action='version', version='%(prog)s ' + __version__
     )
     args = parser.parse_args()
 
