@@ -440,12 +440,7 @@ if __name__ == '__main__':
     #     station[station_name]['list-files'] = loggernet.listFiles(station_name)
 
     # test for listFiles
-    # station_name = 'draker_22-north'
-    # station_name = 'swinerton_water-treatment'
-    # station_name = 'Unisolar_hunter-panels'
-    # station_name = 's3815_605-fenmar_das-1'
-    # station_name = 's3811_port-authority-harrison_das-1'
-    # station_name = 's3698_vandenberg-afb-bld-8314_das-1'
+    # station_name = 'LAB-CR1000'
     # station[station_name] = {}
     # station[station_name]['list-files'] = loggernet.listFiles(station_name)
 
