@@ -30,7 +30,7 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 # Get the long description from the README file
-with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.rst'), encoding='utf-8') as f:
+with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
@@ -46,7 +46,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/eastmanjoe/python_bucket/tree/master/modules/coraUtil',
+    url='https://github.com/eastmanjoe/coraUtil',
 
     # Author details
     author='Joe Eastman',
