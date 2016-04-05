@@ -344,35 +344,23 @@ class CoraUtil:
     def clock_check(self, station_name):
         cora_output = self.execute_cora('clock-check {' + station_name + '};')
 
-        logger.debug('cora_output is: {}'.format(cora_output))
-
         if cora_output not in dict.keys(CoraError.FAILURES):
-            cora_output = re.sub(r'\r', '', cora_output)
-            cora_output = re.sub(r'\n', '', cora_output)
-            cora_output = re.sub(r'""', ',', cora_output)
-
-            # extract the cora response
             str_start = cora_output.index('*clock-check')
             str_end = cora_output.index('+clock-check')
 
-            station_time = cora_output[str_start:str_end]
+            returned_str = cora_output[str_start:str_end]
 
-            # extract the list of tables
-            str_start = table_str.index('{') + 1
-            str_end = table_str.index('}')
-            table_str = table_str[str_start:str_end]
+            # extract the time returned
+            str_start = returned_str.index('{') + 1
+            str_end = returned_str.index('}')
+            station_time = returned_str[str_start:str_end]
 
-            table_str = re.sub('"', '', table_str)
-
-            logger.debug('{}'.format(cora_output))
-            logger.debug('{}'.format(station_time))
-
-            station_time = table_str.split(',')
-
-            return table_list
-        else:
-            # raise CoraError(cora_output)
-            return cora_output
+            if '2016' in station_time:
+                return True
+            else:
+                return False
+	else:
+	    return False
 
 
     def get_value(self, station_name, value):
