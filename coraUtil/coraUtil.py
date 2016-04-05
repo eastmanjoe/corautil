@@ -359,8 +359,8 @@ class CoraUtil:
                 return True
             else:
                 return False
-	else:
-	    return False
+        else:
+            return False
 
 
     def get_value(self, station_name, value):
@@ -416,6 +416,9 @@ class CoraUtil:
         # cora_output = self.execute_cora(';')
         pass
 
+    def enable_collection(self, station):
+        cora_output = self.execute_cora('set-device-setting {} defaultScheduleEnabled true;'.format(station))
+        print(cora_output)
 
 # ---------------------------------------------------------------------------#
 if __name__ == '__main__':
