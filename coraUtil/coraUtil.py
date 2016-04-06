@@ -417,8 +417,12 @@ class CoraUtil:
         pass
 
     def enable_collection(self, station):
-        cora_output = self.execute_cora('set-device-setting {} defaultScheduleEnabled true;'.format(station))
-        print(cora_output)
+        cora_output = self.execute_cora('set-device-setting %s 5 {true {19900101 00:00:30.000} 900000 120000 5 900000};' % station)
+        return cora_output
+
+    def disable_collection(self, station):
+        cora_output = self.execute_cora('set-device-setting %s 5 {false {19900101 00:00:30.000} 900000 120000 5 900000};' % station)
+        return cora_output
 
 # ---------------------------------------------------------------------------#
 if __name__ == '__main__':
