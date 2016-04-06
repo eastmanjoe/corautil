@@ -424,6 +424,20 @@ class CoraUtil:
         cora_output = self.execute_cora('set-device-setting %s 5 {false {19900101 00:00:30.000} 900000 120000 5 900000};' % station)
         return cora_output
 
+    def get_table_defs(self, station):
+        cora_output = self.execute_cora('get-table-defs %s;' % station)
+        if cora_output not in dict.keys(CoraError.FAILURES):
+            return True
+        else:
+            return False
+
+    def collect_table(self, station, table):
+        cora_output = self.execute_cora('set-collect-area-setting %s %s 2 true;' % (station, table))
+        if cora_output not in dict.keys(CoraError.FAILURES):
+            return True
+        else:
+            return False
+
 # ---------------------------------------------------------------------------#
 if __name__ == '__main__':
     fileConfig(os.path.join(os.path.dirname(__file__), 'cora.ini'))
