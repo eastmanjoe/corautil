@@ -15,6 +15,8 @@ import signal
 import logging
 import time
 import re
+from datetime import datetime
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -355,7 +357,7 @@ class CoraUtil:
             str_end = returned_str.index('}')
             station_time = returned_str[str_start:str_end]
 
-            if '2016' in station_time:
+            if datetime.utcnow().strftime('%Y-%m-%d') in station_time:
                 return True
             else:
                 return False
@@ -437,6 +439,80 @@ class CoraUtil:
             return True
         else:
             return False
+
+    def read_note(self, station):
+        #use this to write a read a station in loggernet
+        cora_output = self.execute_cora('get-device-setting {' + station + '} 90;')
+
+        logger.debug('cora_output is: {}'.format(cora_output))
+
+        if cora_output not in dict.keys(CoraError.FAILURES):
+
+            # extract the cora response
+            str_start = cora_output.index('*get-device-setting,active')
+            str_end = cora_output.index('+get-device-setting')
+
+            description_str = cora_output[str_start:str_end]
+
+            # extract the list of tables
+            str_start = description_str.index('{') + 1
+            str_end = description_str.index('}')
+            description_str = description_str[str_start:str_end]
+
+            description_str = re.sub('"', '', description_str)
+
+            logger.debug('{}'.format(cora_output))
+            logger.debug('{}'.format(str_start))
+            logger.debug('{}'.format(str_end))
+            logger.debug('{}'.format(description_str))
+
+            # description_list = description_str.split(',')
+
+            return description_str
+        else:
+            # raise CoraError(cora_output)
+            return cora_output
+
+    def write_note(self, station, note, overwrite=False):
+        #use this to write a note to a station in loggernet
+
+        if not overwrite:
+            current_note = self.read_note(station)
+            new_note = current_note + note
+        else:
+            new_note = note
+
+        cora_output = self.execute_cora('set-device-setting {' + station + '} 90 {' + new_note + '};')
+
+        logger.debug('cora_output is: {}'.format(cora_output))
+
+        # if cora_output not in dict.keys(CoraError.FAILURES):
+
+            # extract the cora response
+            # str_start = cora_output.index('*get-device-setting,active')
+            # str_end = cora_output.index('+get-device-setting')
+            #
+            # description_str = cora_output[str_start:str_end]
+            #
+            # extract the list of tables
+            # str_start = description_str.index('{') + 1
+            # str_end = description_str.index('}')
+            # description_str = description_str[str_start:str_end]
+            #
+            # description_str = re.sub('"', '', description_str)
+            #
+            # logger.debug('{}'.format(cora_output))
+            # logger.debug('{}'.format(str_start))
+            # logger.debug('{}'.format(str_end))
+            # logger.debug('{}'.format(description_str))
+            #
+            # description_list = description_str.split(',')
+
+            # return str(description_list)
+        # else:
+            # raise CoraError(cora_output)
+            # return cora_output
+
 
 # ---------------------------------------------------------------------------#
 if __name__ == '__main__':
