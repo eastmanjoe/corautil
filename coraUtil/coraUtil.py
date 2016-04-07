@@ -72,7 +72,13 @@ class CoraError(Exception):
             'The security code setting for the logger device is not set to an appropriate value.',
         'invalid_table_definitions': "The server's table definitions are not valid.",
         'invalid_device_name': 'The name of the device specified is invalid.',
-        'unsupported by the server': 'The transaction is not supported by the server or by the device specified.'
+        'unsupported by the server': 'The transaction is not supported by the server or by the device specified.',
+        'Invalid Action code': 'The value of the action option is invalid.',
+        'unknown error': 'The server sent a response code that corascript was unable to recognise.',
+        'in progress': 'Another transaction is already in progress.',
+        'rejected security code': 'The security code setting for the device is wrong.',
+        'communication failure': 'Communication with the datalogger failed.',
+        'network is locked': 'Another client has the network locked.'
     }
 
     def __init__(self, value):
@@ -428,7 +434,7 @@ class CoraUtil:
 
     def get_table_defs(self, station):
         cora_output = self.execute_cora('get-table-defs %s;' % station)
-        if '-get' not in cora_output:
+        if cora_output not in dict.keys(CoraError.FAILURES):
             return True
         else:
             return False
