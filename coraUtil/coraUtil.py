@@ -78,7 +78,8 @@ class CoraError(Exception):
         'in progress': 'Another transaction is already in progress.',
         'rejected security code': 'The security code setting for the device is wrong.',
         'communication failure': 'Communication with the datalogger failed.',
-        'network is locked': 'Another client has the network locked.'
+        'network is locked': 'Another client has the network locked.',
+        'communications disabled': 'Communication with the datalogger is disabled.'
     }
 
     def __init__(self, value):
