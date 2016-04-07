@@ -435,13 +435,13 @@ class CoraUtil:
 
     def collect_table(self, station, table):
         cora_output = self.execute_cora('set-collect-area-setting %s %s 2 true;' % (station, table))
-        if cora_output not in dict.keys(CoraError.FAILURES):
+        if '-get' not in cora_output):
             return True
         else:
             return False
 
     def read_note(self, station):
-        #use this to write a read a station in loggernet
+        #use this to read a station note in loggernet
         cora_output = self.execute_cora('get-device-setting {' + station + '} 90;')
 
         logger.debug('cora_output is: {}'.format(cora_output))
@@ -485,33 +485,6 @@ class CoraUtil:
         cora_output = self.execute_cora('set-device-setting {' + station + '} 90 {' + new_note + '};')
 
         logger.debug('cora_output is: {}'.format(cora_output))
-
-        # if cora_output not in dict.keys(CoraError.FAILURES):
-
-            # extract the cora response
-            # str_start = cora_output.index('*get-device-setting,active')
-            # str_end = cora_output.index('+get-device-setting')
-            #
-            # description_str = cora_output[str_start:str_end]
-            #
-            # extract the list of tables
-            # str_start = description_str.index('{') + 1
-            # str_end = description_str.index('}')
-            # description_str = description_str[str_start:str_end]
-            #
-            # description_str = re.sub('"', '', description_str)
-            #
-            # logger.debug('{}'.format(cora_output))
-            # logger.debug('{}'.format(str_start))
-            # logger.debug('{}'.format(str_end))
-            # logger.debug('{}'.format(description_str))
-            #
-            # description_list = description_str.split(',')
-
-            # return str(description_list)
-        # else:
-            # raise CoraError(cora_output)
-            # return cora_output
 
 
 # ---------------------------------------------------------------------------#
