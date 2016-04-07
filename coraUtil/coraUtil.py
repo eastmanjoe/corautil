@@ -428,14 +428,14 @@ class CoraUtil:
 
     def get_table_defs(self, station):
         cora_output = self.execute_cora('get-table-defs %s;' % station)
-        if cora_output not in dict.keys(CoraError.FAILURES):
+        if '-get' not in cora_output:
             return True
         else:
             return False
 
     def collect_table(self, station, table):
         cora_output = self.execute_cora('set-collect-area-setting %s %s 2 true;' % (station, table))
-        if '-get' not in cora_output):
+        if cora_output not in dict.keys(CoraError.FAILURES):
             return True
         else:
             return False
