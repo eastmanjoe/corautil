@@ -79,7 +79,8 @@ class CoraError(Exception):
         'rejected security code': 'The security code setting for the device is wrong.',
         'communication failure': 'Communication with the datalogger failed.',
         'network is locked': 'Another client has the network locked.',
-        'communications disabled': 'Communication with the datalogger is disabled.'
+        'communications disabled': 'Communication with the datalogger is disabled.',
+        'Expected the setting identifier': 'Expected the setting identifier as the third argument.'
     }
 
     def __init__(self, value):
@@ -446,6 +447,14 @@ class CoraUtil:
             return True
         else:
             return False
+
+    def get_table_settings(self, station, table):
+        cora_output = self.execute_cora('list-collect-area-setting %s %s;' % (station, table))
+        if cora_output not in dict.keys(CoraError.FAILURES):
+            return cora_output
+        else:
+            return False
+
 
     def read_note(self, station):
         #use this to read a station note in loggernet
