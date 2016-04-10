@@ -80,7 +80,9 @@ class CoraError(Exception):
         'communication failure': 'Communication with the datalogger failed.',
         'network is locked': 'Another client has the network locked.',
         'communications disabled': 'Communication with the datalogger is disabled.',
-        'Expected the setting identifier': 'Expected the setting identifier as the third argument.'
+        'Expected the setting identifier': 'Expected the setting identifier as the third argument.',
+        'expected the setting value': 'Expected the new value for the setting as the fourth argument.',
+
     }
 
     def __init__(self, value):
@@ -449,7 +451,7 @@ class CoraUtil:
             return False
 
     def get_table_settings(self, station, table):
-        cora_output = self.execute_cora('list-collect-area-setting %s %s;' % (station, table))
+        cora_output = self.execute_cora('list-collect-area-settings %s %s;' % (station, table))
         if cora_output not in dict.keys(CoraError.FAILURES):
             return cora_output
         else:
