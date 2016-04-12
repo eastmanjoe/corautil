@@ -453,9 +453,19 @@ class CoraUtil:
     def get_table_settings(self, station, table):
         cora_output = self.execute_cora('list-collect-area-settings %s %s;' % (station, table))
         if cora_output not in dict.keys(CoraError.FAILURES):
-            return cora_output
+            str_start = cora_output.index('*list-collect-area-settings')
+            str_end = cora_output.index('+list-collect-area-settings')
+            description_str = cora_output[str_start:str_end]
+            description_str = re.sub('\n', '', description_str)
+            logger.debug('{}'.format(output))
+            logger.debug('{}'.format(str_start))
+            logger.debug('{}'.format(str_end))
+            logger.debug('{}'.format(description_str))
+
+            return description_str
+
         else:
-            return False
+            return cora_output
 
 
     def read_note(self, station):
