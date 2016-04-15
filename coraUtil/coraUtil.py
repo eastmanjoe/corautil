@@ -82,6 +82,11 @@ class CoraError(Exception):
         'communications disabled': 'Communication with the datalogger is disabled.',
         'Expected the setting identifier': 'Expected the setting identifier as the third argument.',
         'expected the setting value': 'Expected the new value for the setting as the fourth argument.',
+        'server session broken': 'The server session was broken while this command was executing.',
+        'unsuported transaction': 'One or more required transactions are not supported by the server.',
+        'blocked by server security': 'The command could not execute because of server security.',
+        'device is online':
+            'The command cannot execute because the device (or one of its children) is on-line. Current versions of the server will force all of the effected devices off-line.'
 
     }
 
@@ -513,6 +518,13 @@ class CoraUtil:
         cora_output = self.execute_cora('set-device-setting {' + station + '} 90 {' + new_note + '};')
 
         logger.debug('cora_output is: {}'.format(cora_output))
+
+    def delete_device(self, device):
+        cora_output = self.execute_cora('delete-device ' + device + ';')
+        logger.info('{}'.format(cora_output))
+
+        return cora_output
+
 
 
 # ---------------------------------------------------------------------------#
