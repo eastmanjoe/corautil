@@ -472,6 +472,12 @@ class CoraUtil:
         else:
             return cora_output
 
+    def create_backup_scripts(self):
+        # create backup
+        cora_output = self.execute_cora('create-backup-script ' + self.server_ip + '-backup.cora;')
+        parsed_backup = self.format_cora_backup_scripts(self.server_ip + '-backup.cora')
+        return parsed_backup
+
 
     def read_note(self, station):
         #use this to read a station note in loggernet
@@ -524,6 +530,51 @@ class CoraUtil:
         logger.info('{}'.format(cora_output))
 
         return cora_output
+
+    def format_cora_backup_scripts(self, filename):
+        """
+        remove tabs, extra spaces and extraneous new-lines in
+        create-backup-script's created by cora
+
+        :param filename: cora backup script to format
+        :type filename: str
+        :return
+        """
+
+        buffer_str = ""
+        parsed_file = []
+
+        with open(filename, 'r') as fid:
+            for line in fid:
+                # remove the line endings
+                line = line.rstrip()
+
+                # remove whitespace
+                line = re.sub(r'\s+', ' ', line)
+                # strip spaces that at the end of the line
+                line = line.rstrip(' ')
+                # if the cora command is already on a single line just append it to the list
+                if line.endswith(';') and buffer_str == "":
+                parsed_file.append(line)
+
+                # finish building the cora command and append it to the list when the semi-colon is found
+                elif line.endswith(';') and buffer_str != "":
+                    buffer_str += ' ' + line
+                    parsed_file.append(buffer_str)
+                    buffer_str = ""
+
+                # start building the cora command if the line does not contain a semi-colon
+                else:
+                    # append a space to the line if this is not the first line
+                    if buffer_str != "":
+                        buffer_str += ' '
+
+                    buffer_str += line
+
+        with open(filename, 'w') as fid:
+            fid.write('\n'.join(parsed_file))
+
+        return parsed_file
 
 
 
