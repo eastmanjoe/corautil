@@ -555,7 +555,7 @@ class CoraUtil:
                 line = line.rstrip(' ')
                 # if the cora command is already on a single line just append it to the list
                 if line.endswith(';') and buffer_str == "":
-                parsed_file.append(line)
+                    parsed_file.append(line)
 
                 # finish building the cora command and append it to the list when the semi-colon is found
                 elif line.endswith(';') and buffer_str != "":
