@@ -6,7 +6,8 @@ Run Cora commands
 
 # ---------------------------------------------------------------------------#
 from argparse import ArgumentParser
-import subprocess
+# import subprocess
+from subprocess import check_output, Popen, PIPE
 from logging.config import fileConfig
 
 import os
@@ -18,7 +19,7 @@ import re
 from datetime import datetime
 import time
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------#
@@ -86,7 +87,9 @@ class CoraError(Exception):
         'unsuported transaction': 'One or more required transactions are not supported by the server.',
         'blocked by server security': 'The command could not execute because of server security.',
         'device is online':
-            'The command cannot execute because the device (or one of its children) is on-line. Current versions of the server will force all of the effected devices off-line.'
+            'The command cannot execute because the device (or one of its children) is on-line. Current '
+            'versions of the server will force all of the effected devices off-line.',
+        'Invalid value name syntax': ''
 
     }
 
@@ -132,6 +135,7 @@ class CoraUtil:
         self.username = username
         self.password = password
         self.server_port = server_port
+        self.logger = logging.getLogger('coraUtil')
 
     def write_cora_file(self, command_str):
         """
@@ -148,6 +152,7 @@ class CoraUtil:
         cora_connect += '--server-port=' + str(self.server_port) + ';\n'
         cora_connect += 'lock-network;'
 
+        # with open(os.path.normpath(os.path.join(os.path.dirname(__file__), 'tmp.cora')), 'w') as fid:
         with open('tmp.cora', 'w') as fid:
             fid.write(cora_connect + '\n')
             fid.write(command_str + '\n')
@@ -160,7 +165,14 @@ class CoraUtil:
         :param command_str: the list of cora commands
         :type command_str: str
         """
-        cora = ['cora', '--echo=on', '--input-file=tmp.cora']
+
+        # TODO: figure out how to locate the cora_cmd executable
+        # cora = ['cora', '--echo=on', '--input-file=tmp.cora']
+        # cora = ['cora_cmd.exe', '--echo=on', '--input-file=tmp.cora']
+        # cora = ['cora', '--echo=on', '--input-file=' + os.path.normpath(os.path.join(os.path.dirname(__file__), 'tmp.cora'))]
+        # cora = ['"C:\Program Files (x86)\Campbellsci\LoggerNet\cora_cmd.exe"', '--echo=on', '--input-file=' + os.path.normpath(os.path.join(os.path.dirname(__file__), 'tmp.cora'))]
+        cora = ['"C:\Program Files (x86)\Campbellsci\LoggerNet\cora_cmd.exe"', '--echo=on', '--input-file=tmp.cora']
+        # cora = ['cora', '--echo=on', '--input=connect locahost; list-stations;exit;']
 
         command = command_str.partition(' ')
 
@@ -168,14 +180,23 @@ class CoraUtil:
         response = re.compile("\*" + command[0].strip(';') + "\n{\n(?P<response>.+)\n}\n")
 
         # write the cora commands to a file to make executing them easier
+        self.logger.debug('writing cora temp file to {}'.format(os.path.dirname(os.getcwd())))
         self.write_cora_file(command_str)
 
         # execute the cora command
-        logger.debug('executing cora command')
-        cora_output = subprocess.check_output(cora)
+        self.logger.debug('executing cora command: {}'.format(' '.join(cora)))
+        # cora_output = subprocess.check_output(cora, stdin=None, stderr=None, shell=False, universal_newlines=False)
+        # cora_output = check_output(cora)
+        cora_proc = Popen(' '.join(cora), stdout=PIPE, stderr=PIPE)
+        # cora_proc = Popen(' '.join(cora), stdout=PIPE, stderr=PIPE, shell=True)
+        cora_output, cora_proc_err = cora_proc.communicate()
+        if cora_proc.returncode != 0:
+            self.logger.debug('cora returncode is {}'.format(cora_proc.returncode))
+            self.logger.debug('cora error is {}'.format(cora_proc_err))
+            exit(cora_proc.returncode)
 
         # cora_output = re.sub(r'\r', '\n', cora_output)
-        logger.debug('output of cora is: {}'.format(cora_output))
+        self.logger.debug('output of cora is: {}'.format(cora_output))
 
         # os.remove('tmp.cora')
 
@@ -203,7 +224,7 @@ class CoraUtil:
         station_list = []
         station_name = re.compile(r'\{\{(?P<station_name>.*)\}\s+\d+\}')
 
-        logger.debug('getting station list via cora')
+        self.logger.debug('getting station list via cora')
 
         cora_output = self.execute_cora('list-stations;')
 
@@ -264,17 +285,17 @@ class CoraUtil:
                         file_info['size'] = parameter.group('size')
                         file_info['last-changed'] = parameter.group('last_changed')
 
-                        logger.debug('filename is: {}'.format(file_info['filename']))
-                        logger.debug('file_info is: {}'.format(file_info))
+                        self.logger.debug('filename is: {}'.format(file_info['filename']))
+                        self.logger.debug('file_info is: {}'.format(file_info))
 
                         if file_info['filename'] != '':
                             file_list.append(file_info)
 
-            logger.debug('the complete list is: {}'.format(file_list))
+                        self.logger.debug('the complete list is: {}'.format(file_list))
             return file_list
 
         else:
-            logger.debug('cora error is: {}'.format(CoraError))
+            self.logger.debug('cora error is: {}'.format(CoraError))
             # raise CoraError(cora_output)
             return cora_output
 
@@ -320,12 +341,12 @@ class CoraUtil:
     def get_network_map(self, export_format='xml'):
         # execute the cora command
         cora_output = self.execute_cora('make-xml-network-map --format=' + export_format + ';')
-        logger.info('{}'.format(cora_output))
+        self.logger.info('{}'.format(cora_output))
 
     def list_tables(self, station_name):
         cora_output = self.execute_cora('list-tables {' + station_name + '};')
 
-        logger.debug('cora_output is: {}'.format(cora_output))
+        self.logger.debug('cora_output is: {}'.format(cora_output))
 
         if cora_output not in dict.keys(CoraError.FAILURES):
             cora_output = re.sub(r'\r', '', cora_output)
@@ -345,10 +366,10 @@ class CoraUtil:
 
             table_str = re.sub('"', '', table_str)
 
-            logger.debug('{}'.format(cora_output))
-            logger.debug('{}'.format(str_start))
-            logger.debug('{}'.format(str_end))
-            logger.debug('{}'.format(table_str))
+            self.logger.debug('{}'.format(cora_output))
+            self.logger.debug('{}'.format(str_start))
+            self.logger.debug('{}'.format(str_end))
+            self.logger.debug('{}'.format(table_str))
 
             table_list = table_str.split(',')
 
@@ -387,41 +408,42 @@ class CoraUtil:
             cora_output = re.sub(r'\r', '', cora_output)
             cora_output = re.sub(r'\n', '', cora_output)
 
-            logger.debug('cora_output is: {}'.format(cora_output))
+            self.logger.debug('cora_output is: {}'.format(cora_output))
 
             value_index_start = cora_output.index('*get-value{') + 11
             value_index_end = cora_output.index('}+get-value')
 
             value_str = cora_output[value_index_start:value_index_end]
-
             return value_str
+
         else:
-            # logger.error('{}'.format(CoraError(cora_output)))
+            logger.error('{}'.format(CoraError(cora_output)))
             # raise CoraError(cora_output)
             return cora_output
+
 
     def get_program_stats(self, station_name):
         # list of cora command to execute
         cora_output = self.execute_cora('get-program-stats {' + station_name + '};')
-        logger.info('{}'.format(cora_output))
+        self.logger.info('{}'.format(cora_output))
 
     def change_account(self, account_name, password, security_level, device_addition=''):
         options = [account_name, password, security_level, '{' + device_addition + '};']
         cora_output = self.execute_cora('change-account ' + ' '.join(options))
-        logger.info('{}'.format(cora_output))
+        self.logger.info('{}'.format(cora_output))
 
     def add_account(self, account_name, password, security_level, device_addition=''):
         options = [account_name, password, security_level, '{' + device_addition + '};']
         cora_output = self.execute_cora('add-account ' + ' '.join(options))
-        logger.info('{}'.format(cora_output))
+        self.logger.info('{}'.format(cora_output))
 
     def delete_account(self, account_name):
         cora_output = self.execute_cora('delete-account ' + account_name + ';')
-        logger.info('{}'.format(cora_output))
+        self.logger.info('{}'.format(cora_output))
 
     def list_accounts(self):
         cora_output = self.execute_cora('list-accounts;')
-        logger.info('{}'.format(cora_output))
+        self.logger.info('{}'.format(cora_output))
 
     def add_device(self, device_type, device_name, anchor_code, anchor_device_name):
         # cora_output = self.execute_cora(';')
@@ -462,10 +484,10 @@ class CoraUtil:
             str_end = cora_output.index('+list-collect-area-settings')
             description_str = cora_output[str_start:str_end]
             description_str = re.sub('\n', '', description_str)
-            logger.debug('{}'.format(output))
-            logger.debug('{}'.format(str_start))
-            logger.debug('{}'.format(str_end))
-            logger.debug('{}'.format(description_str))
+            self.logger.debug('{}'.format(output))
+            self.logger.debug('{}'.format(str_start))
+            self.logger.debug('{}'.format(str_end))
+            self.logger.debug('{}'.format(description_str))
 
             return description_str
 
@@ -483,7 +505,7 @@ class CoraUtil:
         #use this to read a station note in loggernet
         cora_output = self.execute_cora('get-device-setting {' + station + '} 90;')
 
-        logger.debug('cora_output is: {}'.format(cora_output))
+        self.logger.debug('cora_output is: {}'.format(cora_output))
 
         if cora_output not in dict.keys(CoraError.FAILURES):
 
@@ -500,10 +522,10 @@ class CoraUtil:
 
             description_str = re.sub('"', '', description_str)
 
-            logger.debug('{}'.format(cora_output))
-            logger.debug('{}'.format(str_start))
-            logger.debug('{}'.format(str_end))
-            logger.debug('{}'.format(description_str))
+            self.logger.debug('{}'.format(cora_output))
+            self.logger.debug('{}'.format(str_start))
+            self.logger.debug('{}'.format(str_end))
+            self.logger.debug('{}'.format(description_str))
 
             # description_list = description_str.split(',')
 
@@ -523,11 +545,11 @@ class CoraUtil:
 
         cora_output = self.execute_cora('set-device-setting {' + station + '} 90 {' + new_note + '};')
 
-        logger.debug('cora_output is: {}'.format(cora_output))
+        self.logger.debug('cora_output is: {}'.format(cora_output))
 
     def delete_device(self, device):
         cora_output = self.execute_cora('delete-device ' + device + ';')
-        logger.info('{}'.format(cora_output))
+        self.logger.info('{}'.format(cora_output))
 
         return cora_output
 
@@ -584,17 +606,19 @@ if __name__ == '__main__':
     logger = logging.getLogger('cora')
     # logger.setLevel('DEBUG')
 
+    logger.debug(os.getcwd())
+
     station = {}
 
     parser = ArgumentParser()
     parser.add_argument(
-        '--server_ip', help='ip address of the LoggerNet server', default=''
+        '--server_ip', help='ip address of the LoggerNet server', default='1.loggernet.draker.us'
     )
     parser.add_argument(
-        '--username', help='username for LoggerNet server', default=''
+        '--username', help='username for LoggerNet server', default='Joe'
     )
     parser.add_argument(
-        '--password', help='password for LoggerNet server', default=''
+        '--password', help='password for LoggerNet server', default='w4LdL4fe'
     )
     args = parser.parse_args()
 
