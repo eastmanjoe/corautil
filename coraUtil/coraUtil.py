@@ -13,13 +13,14 @@ from logging.config import fileConfig
 import os
 import sys
 import signal
-import logging
+from logging import getLogger, INFO, DEBUG
 import time
 import re
 from datetime import datetime
 import time
 
-# logger = logging.getLogger(__name__)
+from errors import CoraError
+from utils import format_cora_backup_scripts, remove_quotes
 
 
 # ---------------------------------------------------------------------------#
@@ -29,75 +30,6 @@ def signal_handler(signal, frame):
     logger.info('Script Stopped on: %s' % time.asctime(
         time.localtime(time.time())))
     sys.exit(0)
-
-
-# ---------------------------------------------------------------------------#
-class CoraError(Exception):
-    FAILURES = {
-        'unsupported message': 'command not supported by LoggerNet server',
-        'invalid security': 'Server security prevented this command/transaction from executing.',
-        'orphaned session': 'The connection to the server was lost while this command was executing.',
-        'connection lost': 'The connection to the server was lost while this command was executing.',
-        'Expected the device name': 'The name of the device is expected as the first argument.',
-        'unknown': 'The server sent a response code that corascript is unable to recognise',
-        'session failure': 'The server connection was lost while the transaction was executing.',
-        'invalid device name': "The device name specified does not exist in the server's network map.",
-        'blocked by server': 'Server security prevented the command from executing.',
-        'unsupported': 'The server or the specified device does not support the command/transaction.',
-        'blocked by logger': 'The security code setting for the specified device is not valid.',
-        'communication disabled': 'Communication with the datalogger is disabled.',
-        'communication failed': 'Communication with the datalogger failed.',
-        'Expected the account name': 'The name of the account was expected in the first argument.',
-        'Expected the account password': 'The password for the account was expected in the second argument.',
-        'Expected the access level': 'The access level for the account was expected in the third argument.',
-        'Invalid access level specified': 'An invalid access level was speciifed.',
-        'unknown failure': 'The server sent a failure code that was not recognised by corascript.',
-        'insufficient access to add accounts': 'Server security blocked this command from executing.',
-        'connection failed': 'The server connection was lost while this command was executing.',
-        'security interface is locked': 'Another client has locked the security interface.',
-        'invalid account name': 'An invalid (or already existing) account name was specified.',
-        'account is in use ': 'The command referred to an account that is currently being used.',
-        'insufficient access to delete accounts': 'The command failed because of server security.',
-        'Broker name expected first': 'The name of the data broker was expected as the first argument.',
-        'invalid broker specified': 'There is no data broker that has the specified name.',
-        'unsupported message type': 'The server does not support this command.',
-        'exception': 'The server sent a response code that corascript was unable to recognise.',
-        'Expected the column identifier': 'The column identifier was expected as the first argument.',
-        'server_security_blocked': 'Server security prevented the command from executing.',
-        'invalid_table_name': 'The table name specified does not exist.',
-        'invalid_column_name': 'The column name specified does not exist.',
-        'invalid_subscript': 'The array subscript specified does not exist.',
-        'communication_failed': 'Communication with the datalogger failed.',
-        'communication_disabled': 'Communication with the datalogger is disabled.',
-        'logger_security_blocked':
-            'The security code setting for the logger device is not set to an appropriate value.',
-        'invalid_table_definitions': "The server's table definitions are not valid.",
-        'invalid_device_name': 'The name of the device specified is invalid.',
-        'unsupported by the server': 'The transaction is not supported by the server or by the device specified.',
-        'Invalid Action code': 'The value of the action option is invalid.',
-        'unknown error': 'The server sent a response code that corascript was unable to recognise.',
-        'in progress': 'Another transaction is already in progress.',
-        'rejected security code': 'The security code setting for the device is wrong.',
-        'communication failure': 'Communication with the datalogger failed.',
-        'network is locked': 'Another client has the network locked.',
-        'communications disabled': 'Communication with the datalogger is disabled.',
-        'Expected the setting identifier': 'Expected the setting identifier as the third argument.',
-        'expected the setting value': 'Expected the new value for the setting as the fourth argument.',
-        'server session broken': 'The server session was broken while this command was executing.',
-        'unsuported transaction': 'One or more required transactions are not supported by the server.',
-        'blocked by server security': 'The command could not execute because of server security.',
-        'device is online':
-            'The command cannot execute because the device (or one of its children) is on-line. Current '
-            'versions of the server will force all of the effected devices off-line.',
-        'Invalid value name syntax': ''
-
-    }
-
-    def __init__(self, value):
-        self.value = CoraError.FAILURES[value]
-
-    def __str__(self):
-        return self.value
 
 
 # ---------------------------------------------------------------------------#
@@ -135,28 +67,10 @@ class CoraUtil:
         self.username = username
         self.password = password
         self.server_port = server_port
-        self.logger = logging.getLogger('coraUtil')
+        self.logger = getLogger('coraUtil')
 
-    def write_cora_file(self, command_str):
-        """
-        write the list of commands to a temp file to be executed
-
-        :param command_str: the cora command(s) to write to the temp file
-        :type command_str: str
-        """
-
-        cora_connect = 'connect '
-        cora_connect += self.server_ip + ' '
-        cora_connect += '--name={' + self.username + '} '
-        cora_connect += '--password={' + self.password + '} '
-        cora_connect += '--server-port=' + str(self.server_port) + ';\n'
-        cora_connect += 'lock-network;'
-
-        # with open(os.path.normpath(os.path.join(os.path.dirname(__file__), 'tmp.cora')), 'w') as fid:
-        with open('tmp.cora', 'w') as fid:
-            fid.write(cora_connect + '\n')
-            fid.write(command_str + '\n')
-            fid.write('unlock-network;\nexit;\n')
+    def set_logger_level(self, logger_level):
+        self.logger.setLevel(logger_level)
 
     def execute_cora(self, command_str):
         """
@@ -166,54 +80,61 @@ class CoraUtil:
         :type command_str: str
         """
 
-        # TODO: figure out how to locate the cora_cmd executable
-        # cora = ['cora', '--echo=on', '--input-file=tmp.cora']
-        # cora = ['cora_cmd.exe', '--echo=on', '--input-file=tmp.cora']
-        # cora = ['cora', '--echo=on', '--input-file=' + os.path.normpath(os.path.join(os.path.dirname(__file__), 'tmp.cora'))]
-        # cora = ['"C:\Program Files (x86)\Campbellsci\LoggerNet\cora_cmd.exe"', '--echo=on', '--input-file=' + os.path.normpath(os.path.join(os.path.dirname(__file__), 'tmp.cora'))]
-        cora = ['"C:\Program Files (x86)\Campbellsci\LoggerNet\cora_cmd.exe"', '--echo=on', '--input-file=tmp.cora']
-        # cora = ['cora', '--echo=on', '--input=connect locahost; list-stations;exit;']
+        if os.name == 'nt':
+            cora = ["C:\Program Files (x86)\Campbellsci\LoggerNet\cora_cmd.exe"]
+        elif os.name == 'posix':
+            cora = ['/opt/CampbellSci/Loggernet/cora_cmd']
+        else:
+            cora = []
 
-        command = command_str.partition(' ')
+        # spawn an instance of cora
+        cora_proc = Popen(cora, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
-        error = re.compile("-" + command[0].strip(';') + ",(?P<error_message>.+)")
-        response = re.compile("\*" + command[0].strip(';') + "\n{\n(?P<response>.+)\n}\n")
+        #generate the connect command and lock the network
+        cora_cmd = 'connect '
+        cora_cmd += self.server_ip + ' '
+        cora_cmd += '--name={' + self.username + '} '
+        cora_cmd += '--password={' + self.password + '} '
+        cora_cmd += '--server-port=' + str(self.server_port) + '; '
+        cora_cmd += 'lock-network;'
+        cora_cmd += command_str
+        cora_cmd += 'unlock-network; exit;'
 
-        # write the cora commands to a file to make executing them easier
-        self.logger.debug('writing cora temp file to {}'.format(os.path.dirname(os.getcwd())))
-        self.write_cora_file(command_str)
+        # run the cora command and terminate the instance
+        self.logger.debug('sending cora command: {}'.format(command_str))
+        output, output_err = cora_proc.communicate(
+            input=cora_cmd
+        )
 
-        # execute the cora command
-        self.logger.debug('executing cora command: {}'.format(' '.join(cora)))
-        # cora_output = subprocess.check_output(cora, stdin=None, stderr=None, shell=False, universal_newlines=False)
-        # cora_output = check_output(cora)
-        cora_proc = Popen(' '.join(cora), stdout=PIPE, stderr=PIPE)
-        # cora_proc = Popen(' '.join(cora), stdout=PIPE, stderr=PIPE, shell=True)
-        cora_output, cora_proc_err = cora_proc.communicate()
         if cora_proc.returncode != 0:
             self.logger.debug('cora returncode is {}'.format(cora_proc.returncode))
-            self.logger.debug('cora error is {}'.format(cora_proc_err))
+            self.logger.debug('cora error is {}'.format(output_err))
             exit(cora_proc.returncode)
 
-        # cora_output = re.sub(r'\r', '\n', cora_output)
-        self.logger.debug('output of cora is: {}'.format(cora_output))
+        # terminate the cora subprocess
+        cora_proc.kill()
 
-        # os.remove('tmp.cora')
+        # create regex to find if cmd error
+        command = command_str.partition(' ')
+        error = re.compile("-" + command[0].strip(';') + ",(?P<error_message>.+)")
+        # response = re.compile("\*" + command[0].strip(';') + "\n{\n(?P<response>.+)\n}\n")
 
-        for line in cora_output.split('\n'):
+        output = re.sub(r'\r\n', '\n', output)
+        self.logger.debug('output of cora is: {}'.format(output))
 
-            # search for the indicator of an error
-            error_str = error.search(line)
+        if error.search(output) is not None:
+            raise CoraError(error.search(output).group('error_message').strip())
+        else:
+            output_list = output.split('\n')
+            output_list = filter(None, output_list)
 
-            # logger.debug('cora line: {}'.format(line))
-            # logger.debug('error found: {}'.format(error_str))
+            for index, value in enumerate(output_list):
+                if '*' + command[0].strip(';') in value:
+                    str_start = index
+                elif '+' + command[0].strip(';') in value:
+                    str_end = index + 1
 
-            if error_str:
-                error_message = error_str.group('error_message').strip()
-
-                return error_message
-
-        return cora_output
+            return output_list[str_start:str_end]
 
     def list_stations(self):
         """
@@ -222,24 +143,23 @@ class CoraUtil:
         :return:
         """
         station_list = []
-        station_name = re.compile(r'\{\{(?P<station_name>.*)\}\s+\d+\}')
+        station_name = re.compile(r'\{\{(?P<station_name>.*)\}\s+(?P<broker_id>\d+)\}')
 
         self.logger.debug('getting station list via cora')
 
         cora_output = self.execute_cora('list-stations;')
 
-        if cora_output not in dict.keys(CoraError.FAILURES):
-            for line in cora_output.split('\n'):
+        try:
+            for line in cora_output:
                 sn_match = station_name.match(line.strip())
-                if sn_match:
+                if sn_match is not None:
                     if sn_match.group('station_name') != '__Statistics__':
                         station_list.append(sn_match.group('station_name'))
 
             return station_list
 
-        else:
-            # raise CoraError(cora_output)
-            return cora_output
+        except CoraError:
+            raise
 
     def list_files(self, station_name):
         re_file = re.compile(
@@ -249,24 +169,20 @@ class CoraUtil:
 
         file_list = []
 
-        cora_output = self.execute_cora('list-files ' + station_name + ';')
+        try:
+            cora_output = self.execute_cora('list-files ' + station_name + ';')
 
-        if cora_output not in dict.keys(CoraError.FAILURES):
-            cora_output_split = cora_output.split('\n')
-            cora_output_split = filter(None, cora_output_split)
+            logger.debug('cora_output list is: {}'.format(cora_output))
 
-            # logger.debug('cora_output list is: {}'.format(cora_output_split))
-
-            for line in cora_output_split:
+            for line in cora_output:
                 # clear dictionary
                 file_info = {}
 
                 # remove newline characters
                 line = line.strip()
 
-                # logger.debug('cora_output line is: {}'.format(line))
+                logger.debug('cora_output line is: {}'.format(line))
 
-                # if CPU is in string
                 if 'CPU' in line:
 
                     parameter = re_file.search(line)
@@ -294,10 +210,8 @@ class CoraUtil:
                         self.logger.debug('the complete list is: {}'.format(file_list))
             return file_list
 
-        else:
-            self.logger.debug('cora error is: {}'.format(CoraError))
-            # raise CoraError(cora_output)
-            return cora_output
+        except CoraError:
+            raise
 
     def list_devices(self):
         """
@@ -310,12 +224,10 @@ class CoraUtil:
             r'\{\{(?P<device_name>.+)\}\s(?P<device_id>\d)+\s(?P<device_type_code>.+)\s(?P<device_indent>\d+)\}'
         )
 
-        cora_output = self.execute_cora('list-devices;')
+        try:
+            cora_output = self.execute_cora('list-devices;')
 
-        if cora_output not in dict.keys(CoraError.FAILURES):
-            cora_output = re.sub(r'\r', '\n', cora_output)
-
-            for line in cora_output.split('\n'):
+            for line in cora_output:
                 line = line.strip()
 
                 device = reg_device.search(line)
@@ -333,10 +245,8 @@ class CoraUtil:
 
             return device_list
 
-        else:
-            # logger.debug('cora error is: {}'.format(CoraError))
-            # raise CoraError(cora_output)
-            return cora_output
+        except CoraError:
+            raise
 
     def get_network_map(self, export_format='xml'):
         # execute the cora command
@@ -344,83 +254,85 @@ class CoraUtil:
         self.logger.info('{}'.format(cora_output))
 
     def list_tables(self, station_name):
-        cora_output = self.execute_cora('list-tables {' + station_name + '};')
-
-        self.logger.debug('cora_output is: {}'.format(cora_output))
-
-        if cora_output not in dict.keys(CoraError.FAILURES):
-            cora_output = re.sub(r'\r', '', cora_output)
-            cora_output = re.sub(r'\n', '', cora_output)
-            cora_output = re.sub(r'""', ',', cora_output)
-
-            # extract the cora response
-            str_start = cora_output.index('*list-tables')
-            str_end = cora_output.index('+list-tables')
-
-            table_str = cora_output[str_start:str_end]
-
-            # extract the list of tables
-            str_start = table_str.index('{') + 1
-            str_end = table_str.index('}')
-            table_str = table_str[str_start:str_end]
-
-            table_str = re.sub('"', '', table_str)
-
-            self.logger.debug('{}'.format(cora_output))
-            self.logger.debug('{}'.format(str_start))
-            self.logger.debug('{}'.format(str_end))
-            self.logger.debug('{}'.format(table_str))
-
-            table_list = table_str.split(',')
-
-            return table_list
-        else:
-            # raise CoraError(cora_output)
-            return cora_output
-
-
-    def clock_check(self, station_name):
-        cora_output = self.execute_cora('clock-check {' + station_name + '};')
-
-        if cora_output not in dict.keys(CoraError.FAILURES):
-            str_start = cora_output.index('*clock-check')
-            str_end = cora_output.index('+clock-check')
-
-            returned_str = cora_output[str_start:str_end]
-
-            # extract the time returned
-            str_start = returned_str.index('{') + 1
-            str_end = returned_str.index('}')
-            station_time = returned_str[str_start:str_end]
-
-            if datetime.utcnow().strftime('%Y-%m-%d') in station_time:
-                return True
-            else:
-                return False
-        else:
-            return False
-
-
-    def get_value(self, station_name, value):
-        cora_output = self.execute_cora('get-value {' + station_name + value + '};')
-
-        if cora_output not in dict.keys(CoraError.FAILURES):
-            cora_output = re.sub(r'\r', '', cora_output)
-            cora_output = re.sub(r'\n', '', cora_output)
+        try:
+            cora_output = self.execute_cora('list-tables {' + station_name + '};')
 
             self.logger.debug('cora_output is: {}'.format(cora_output))
 
-            value_index_start = cora_output.index('*get-value{') + 11
-            value_index_end = cora_output.index('}+get-value')
+            # extract the list of tables
+            str_start = cora_output.index('{') + 1
+            str_end = cora_output.index('}')
 
-            value_str = cora_output[value_index_start:value_index_end]
+            return cora_output[str_start:str_end]
+
+        except CoraError:
+            raise
+
+    def clock_check(self, station_name):
+        """
+         Returns the current time of the station and the difference between the station and the server.
+         The time difference is in milliseconds.  A negative value indicates the station is ahead of the server.
+
+        :param station_name:
+        :return:
+        """
+        station_time = {}
+
+        try:
+            cora_output = self.execute_cora('clock-check {' + station_name + '};')
+
+            # extract the time returned
+            resp_index = cora_output.index('{') + 1
+
+            self.logger.debug(str(cora_output[resp_index]))
+
+            clock_response = re.search(
+                '"(?P<station_time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3})",(?P<differences_msec>[|-]\d+)',
+                str(cora_output[resp_index])
+            )
+
+            if clock_response is not None:
+                station_time['Station Time'] = clock_response.group('station_time')
+                station_time['Time Difference'] = clock_response.group('differences_msec')
+
+                return station_time
+
+        except CoraError:
+            raise
+
+    def data_query(self, station_name, table_name, begin_date, end_date):
+        try:
+            cmd = 'data-query {%s} {%s} "%s" "%s";' % (station_name, table_name, begin_date, end_date)
+            self.logger.debug('cora command: {}'.format(cmd))
+
+            cora_output = self.execute_cora(cmd)
+
+            self.logger.debug('cora_output is: {}'.format(cora_output))
+
+            index_start = cora_output.index('{') + 1
+            index_end = cora_output.index('}')
+
+            return cora_output[index_start:index_end]
+
+        except CoraError:
+            raise
+
+    def get_value(self, station_name, value, swath=1):
+        try:
+            cora_output = self.execute_cora('get-value {' + station_name + '.'+ value + '} --swath=' + str(swath) + ';')
+
+            self.logger.debug('cora_output is: {}'.format(cora_output))
+
+            cora_output = remove_quotes(cora_output)
+
+            index_start = cora_output.index('{') + 1
+            index_end = cora_output.index('}')
+
+            value_str = cora_output[index_start:index_end]
             return value_str
 
-        else:
-            logger.error('{}'.format(CoraError(cora_output)))
-            # raise CoraError(cora_output)
-            return cora_output
-
+        except CoraError:
+            raise
 
     def get_program_stats(self, station_name):
         # list of cora command to execute
@@ -456,19 +368,26 @@ class CoraUtil:
         pass
 
     def enable_collection(self, station):
-        cora_output = self.execute_cora('set-device-setting %s 5 {true {19900101 00:00:30.000} 900000 120000 5 900000};' % station)
+        cora_output = self.execute_cora(
+            'set-device-setting %s 5 {true {19900101 00:00:30.000} 900000 120000 5 900000};' % station
+        )
         return cora_output
 
     def disable_collection(self, station):
-        cora_output = self.execute_cora('set-device-setting %s 5 {false {19900101 00:00:30.000} 900000 120000 5 900000};' % station)
+        cora_output = self.execute_cora(
+            'set-device-setting %s 5 {false {19900101 00:00:30.000} 900000 120000 5 900000};' % station
+        )
         return cora_output
 
     def get_table_defs(self, station):
-        cora_output = self.execute_cora('get-table-defs %s;' % station)
-        if cora_output not in dict.keys(CoraError.FAILURES):
-            return True
-        else:
-            return False
+        try:
+            cora_output = self.execute_cora('get-table-defs %s;' % station)
+
+            if '+get-table-defs' in cora_output:
+                return True
+
+        except CoraError:
+            raise
 
     def collect_table(self, station, table):
         cora_output = self.execute_cora('set-collect-area-setting %s %s 2 true;' % (station, table))
@@ -484,7 +403,7 @@ class CoraUtil:
             str_end = cora_output.index('+list-collect-area-settings')
             description_str = cora_output[str_start:str_end]
             description_str = re.sub('\n', '', description_str)
-            self.logger.debug('{}'.format(output))
+            self.logger.debug('{}'.format(cora_output))
             self.logger.debug('{}'.format(str_start))
             self.logger.debug('{}'.format(str_end))
             self.logger.debug('{}'.format(description_str))
@@ -497,9 +416,8 @@ class CoraUtil:
     def create_backup_scripts(self):
         # create backup
         cora_output = self.execute_cora('create-backup-script ' + self.server_ip + '-backup.cora;')
-        parsed_backup = self.format_cora_backup_scripts(self.server_ip + '-backup.cora')
+        parsed_backup = format_cora_backup_scripts(self.server_ip + '-backup.cora')
         return parsed_backup
-
 
     def read_note(self, station):
         #use this to read a station note in loggernet
@@ -543,7 +461,7 @@ class CoraUtil:
         else:
             new_note = note
 
-        cora_output = self.execute_cora('set-device-setting {' + station + '} 90 {' + new_note + '};')
+        cora_output = self.execute_cora(str('set-device-setting {' + station + '} 90 {' + new_note + '};'))
 
         self.logger.debug('cora_output is: {}'.format(cora_output))
 
@@ -553,58 +471,13 @@ class CoraUtil:
 
         return cora_output
 
-    def format_cora_backup_scripts(self, filename):
-        """
-        remove tabs, extra spaces and extraneous new-lines in
-        create-backup-script's created by cora
-
-        :param filename: cora backup script to format
-        :type filename: str
-        :return
-        """
-
-        buffer_str = ""
-        parsed_file = []
-
-        with open(filename, 'r') as fid:
-            for line in fid:
-                # remove the line endings
-                line = line.rstrip()
-
-                # remove whitespace
-                line = re.sub(r'\s+', ' ', line)
-                # strip spaces that at the end of the line
-                line = line.rstrip(' ')
-                # if the cora command is already on a single line just append it to the list
-                if line.endswith(';') and buffer_str == "":
-                    parsed_file.append(line)
-
-                # finish building the cora command and append it to the list when the semi-colon is found
-                elif line.endswith(';') and buffer_str != "":
-                    buffer_str += ' ' + line
-                    parsed_file.append(buffer_str)
-                    buffer_str = ""
-
-                # start building the cora command if the line does not contain a semi-colon
-                else:
-                    # append a space to the line if this is not the first line
-                    if buffer_str != "":
-                        buffer_str += ' '
-
-                    buffer_str += line
-
-        with open(filename, 'w') as fid:
-            fid.write('\n'.join(parsed_file))
-
-        return parsed_file
-
 
 
 # ---------------------------------------------------------------------------#
 if __name__ == '__main__':
     fileConfig(os.path.join(os.path.dirname(__file__), 'cora.ini'))
-    logger = logging.getLogger('cora')
-    # logger.setLevel('DEBUG')
+    logger = getLogger('cora')
+    logger.setLevel(DEBUG)
 
     logger.debug(os.getcwd())
 
@@ -626,10 +499,10 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
 
     if args.username == '':
-        args.username = raw_input('Please enter your LoggerNet username')
+        args.username = input('Please enter your LoggerNet username')
 
     if args.password == '':
-        args.password = raw_input('Please enter your LoggerNet password')
+        args.password = input('Please enter your LoggerNet password')
 
     # tests for
     # for name, server in dict.items(loggernet_servers):
@@ -640,8 +513,8 @@ if __name__ == '__main__':
     #         loggernet.deleteAccount('Joe')
 
     loggernet = CoraUtil(args.server_ip, args.username, args.password)
-    # station_list = loggernet.listStations()
-    # logger.info('{}'.format(station_list))
+    loggernet.set_logger_level(DEBUG)
+    # logger.info('{}'.format(loggernet.list_stations()))
 
     # for station_name in station_list:
     #     station[station_name] = {}
@@ -655,11 +528,29 @@ if __name__ == '__main__':
     # logger.info('{}'.format(station))
 
     # test for listDevices
-    devices = loggernet.list_devices()
-    logger.info('{}'.format(devices))
+    # logger.info('{}'.format(loggernet.list_devices()))
 
-    # test for listTables
-    # table_list = loggernet.listTables(station_name)
+    # logger.info('{}'.format(loggernet.list_tables('draker_dealer-dot-com')))
+    # logger.info('{}'.format(loggernet.clock_check('draker_dealer-dot-com')))
+    # logger.info('{}'.format(loggernet.list_files('draker_dealer-dot-com')))
+    # logger.info('{}'.format(loggernet.get_value('draker_dealer-dot-com', 'Public.datalogger_ip')))
+    # logger.info('{}'.format(loggernet.get_value('draker_dealer-dot-com', 'DataTableInfo.DataTableName', 5)))
+    # records = loggernet.data_query('draker_dealer-dot-com', 'fifteenMin', '20170601 23:45', '20170602 00:00')
+    # records = loggernet.data_query('__statistics__', 'draker_dealer-dot-com_hist', '20170602 20:00', '20170603 00:00')
+
+    # for record in records:
+    #     logger.info('{}'.format(record))
+
+    # records = loggernet.data_query('__statistics__', 'draker_dealer-dot-com_std', '20170602', '20170603')
+    records = loggernet.data_query('__statistics__', 'sunwize_aspa-tafuna-10_std', '20170602', '20170603')
+
+    for record in records:
+        logger.info('{}'.format(record))
+
+    # logger.info('{}'.format(loggernet.list_tables('__statistics__')))
+    # logger.info('{}'.format(loggernet.list_files('draker_')))
+
+    # table_list = loggernet.list_tables('draker')
     # logger.info('{}'.format(table_list))
     # try:
     #     table_list.remove('Public')
@@ -669,5 +560,4 @@ if __name__ == '__main__':
     #     logger.info('{}'.format(table_list))
 
     # # test for getValue
-    # logger.info('{}'.format(loggernet.getValue(station_name, '.Status.DataTableName(' + str(1) + ')')))
     # logger.info('{}'.format(loggernet.getValue(station_name, '.Status.DataFillDays(' + str(1) + ')')))
