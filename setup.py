@@ -10,43 +10,28 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
-import os
-import re
-
-
-def read(*names, **kwargs):
-    with open(
-        os.path.join(os.path.dirname(__file__), *names),
-        encoding=kwargs.get("encoding", "utf8")
-    ) as fp:
-        return fp.read()
-
-def find_version(*file_paths):
-    version_file = read(*file_paths)
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-    if version_match:
-        return version_match.group(1)
-    raise RuntimeError("Unable to find version string.")
+from os import path
 
 # Get the long description from the README file
-with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:
+with open(path.join(path.abspath(path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+with open(path.join(path.realpath(path.dirname(__file__)), 'corautil/VERSION')) as version_file:
+    version = version_file.read().strip()
+
 setup(
-    name='coraUtil',
+    name='corautil',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    # version='1.0.0',
-    version=find_version('coraUtil', '__init__.py'),
+    version=version,
 
-    description='Campbell Scientific Cora Utility',
+    description='Utility to allow the use of Campbell Scientific Cora script in Python',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/eastmanjoe/coraUtil',
+    url='https://github.com/eastmanjoe/corautil',
 
     # Author details
     author='Joe Eastman',
@@ -72,14 +57,8 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.2',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
 
     # What does your project relate to?
@@ -88,11 +67,11 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    # packages=['coraUtil'],
+    # packages=['corautil'],
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
-    #   py_modules=["coraUtil"],
+    #   py_modules=["corautil"],
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
