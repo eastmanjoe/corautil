@@ -42,8 +42,8 @@ class CoraError(Exception):
         'invalid_subscript': 'The array subscript specified does not exist.',
         'communication_failed': 'Communication with the datalogger failed.',
         'communication_disabled': 'Communication with the datalogger is disabled.',
-        'logger_security_blocked':
-            'The security code setting for the logger device is not set to an appropriate value.',
+        'logger_security_blocked': 'The security code setting for the logger device is not '
+                                   'set to an appropriate value.',
         'invalid_table_definitions': "The server's table definitions are not valid.",
         'invalid_device_name': 'The name of the device specified is invalid.',
         'unsupported by the server': 'The transaction is not supported by the server or by the device specified.',
@@ -53,6 +53,7 @@ class CoraError(Exception):
         'rejected security code': 'The security code setting for the device is wrong.',
         'communication failure': 'Communication with the datalogger failed.',
         'network is locked': 'Another client has the network locked.',
+        'network locked': 'Another client has the network locked.',
         'communications disabled': 'Communication with the datalogger is disabled.',
         'Expected the setting identifier': 'Expected the setting identifier as the third argument.',
         'expected the setting value': 'Expected the new value for the setting as the fourth argument.',
@@ -62,7 +63,16 @@ class CoraError(Exception):
         'device is online':
             'The command cannot execute because the device (or one of its children) is on-line. Current '
             'versions of the server will force all of the effected devices off-line.',
-        'Invalid value name syntax': ''
+        'Invalid value name syntax': '',
+        'unsupported setting identifier': 'corascript does not recognise the specified setting identifier',
+        'invalid setting format': 'corascript was unable to parse the setting.',
+        'invalid device name specified': 'A device name was specified that is not present in the servers network map.',
+        'session failed': 'The session with the specified device faile while the command was pending. This could '
+                          'happen because the device was deleted or because the server was shut down while the command '
+                          'was pending.',
+        'server security blocked': 'Server security prevented the command from being carried out.',
+        'invalid setting value': 'An invalid value was specified for this setting.',
+        'setting is read-only': 'The specified setting cannot be set.',
 
     }
 
