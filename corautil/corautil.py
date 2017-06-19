@@ -164,6 +164,14 @@ class CoraUtil:
             raise
 
     def list_files(self, station_name):
+        """
+        This command is used to list the files that can be found in a datalogger's file system. It is supported only
+        for those datalogger types that support file systems (CR9000, CR5000, CR1000, CR10X-PB, CR510-PB,
+        CR23X-PB, and, in a limited sense, the CR2xx).
+
+        :param station_name:
+        :return:
+        """
         re_file = re.compile(
             r'\{CPU:(?P<filename>.+)\}\srn=(?P<rn>false|true)\spu=(?P<pu>false|true)' +
             r'\sro=(?P<ro>false|true)\ssize=(?P<size>\d+)\slast-changed=\{(?P<last_changed>.+)\}'
@@ -212,6 +220,34 @@ class CoraUtil:
 
                         self.logger.debug('the complete list is: {}'.format(file_list))
             return file_list
+
+        except CoraError:
+            raise
+
+    def send_file(self, station_name, filepath, run_now=False, run_on_power_up=False):
+        """
+        This command sends a file from the local computer's file system to a station's file system. The file can
+        optionally be marked to run as the current program or on power up. This command is supported only
+        for datalogger types that support file systems including the CR9000, CR5000, CR1000, CR800 Series,
+        CR3000, and, in a more limited sense, the CR10X-PB, CR510-PB, and CR23X-PB.
+
+        :param station_name:
+        :param filename:
+        :param run_now:
+        :param run_on_power_up:
+        :return:
+        """
+
+        try:
+            if path.exists(filepath):
+                filepath = '{' + path.abspath(filepath) + '}'
+                send_options = '{' + '--run-now={} --run-on-power-up={}'.format(run_now, run_on_power_up) + '}'
+
+                cora_output = self.execute_cora('send-file {} {} {};'.format(station_name, filepath, send_options))
+
+                return True
+            else:
+                raise OSError(filepath)
 
         except CoraError:
             raise

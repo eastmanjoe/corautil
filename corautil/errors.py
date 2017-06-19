@@ -73,7 +73,15 @@ class CoraError(Exception):
         'server security blocked': 'Server security prevented the command from being carried out.',
         'invalid setting value': 'An invalid value was specified for this setting.',
         'setting is read-only': 'The specified setting cannot be set.',
-
+        'Expected the file name': 'The name of the file to send was expected as the second argument.',
+        'Invalid run-now option specified': 'The value associated with the run-now option was invalid.',
+        'Invalid run-on-power-up option specified': 'The value associated with the run-on-power-up option was invalid.',
+        'invalid file name': 'The file name specified is invalid.',
+        'logger resource error': 'The datalogger does not have the resources to store the file.',
+        'logger compile error': 'The datalogger could not compile the program.',
+        'logger permission denied': 'The security code setting for the specified device is not set to a valid value.',
+        'server connection failed': 'The connection to the server failed while this command was executing.',
+        'server permission denied': 'Server security prevented this command from executing.'
     }
 
     def __init__(self, value):
