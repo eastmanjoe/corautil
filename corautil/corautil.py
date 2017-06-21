@@ -252,6 +252,26 @@ class CoraUtil:
         except CoraError:
             raise
 
+    def send_program_file(self, station_name, filepath, sending_os=False):
+        try:
+            if path.exists(filepath):
+
+                filename, file_ext = path.splitext(filepath)
+                filepath = '{' + path.abspath(filepath) + '}'
+
+                if sending_os and file_ext == '.obj':
+                    cora_output = self.execute_cora(
+                        'send-program-file {} {} prevent-first-stop;'.format(station_name, filepath))
+                else:
+                    cora_output = self.execute_cora('send-program-file {} {};'.format(station_name, filepath))
+
+                return True
+            else:
+                raise OSError(filepath)
+
+        except CoraError:
+            raise
+
     def list_devices(self):
         """
         get a list of the devices on the loggernet server

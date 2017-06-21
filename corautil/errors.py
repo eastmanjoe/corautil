@@ -81,7 +81,22 @@ class CoraError(Exception):
         'logger compile error': 'The datalogger could not compile the program.',
         'logger permission denied': 'The security code setting for the specified device is not set to a valid value.',
         'server connection failed': 'The connection to the server failed while this command was executing.',
-        'server permission denied': 'Server security prevented this command from executing.'
+        'server permission denied': 'Server security prevented this command from executing.',
+        'Device name expected first': 'The name of the datalogger type device was expected as the first argument.',
+        'Unable to open the file': 'The specified file could not be opened for reading.',
+        'Expected the file path in argument 2': 'The name of the file to send was expected as the second argument.',
+        'logger locked': 'The server is engaged in a critical transaction with the datalogger and cannot start this '
+                         'command at this time.',
+        'server resource error': 'The server does not have the resources to store the file.',
+        'communication is disabled': 'Communication with the specified device is disabled.',
+        'unknown error code': 'The server sent a response code that corascript was unable to recognise.',
+        'compile failure': 'The datalogger could not compile the program.',
+        'datalogger communication failure': 'Communication failed with the datalogger',
+        'security failure': 'The security code setting for the datalogger device is set to an invalid value.',
+        'datalogger storage buffer full': 'The datalogger does not have enough space to store the entire program.',
+        'datalogger communication is disabled': 'Communication with the datalogger is disabled.',
+        'table definitions read failure': 'The server was unable to read new table definitions from the datalogger '
+                                          'following the program file send.'
     }
 
     def __init__(self, value):
