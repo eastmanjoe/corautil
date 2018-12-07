@@ -7,7 +7,8 @@ Utilities used in the module
 import re
 from logging import getLogger
 import os
-from .errors import CoraError
+
+from corautil.errors import CoraError
 
 
 def format_cora_backup_scripts(filename):
@@ -57,9 +58,10 @@ def format_cora_backup_scripts(filename):
 
 
 def remove_quotes(str_list):
-    for index, line in enumerate(str_list):
-        line = re.sub(r'"', '', line)
-        str_list[index] = line
+    if type(str_list) is list:
+        for index, line in enumerate(str_list):
+            line = re.sub(r'"', '', line)
+            str_list[index] = line
 
     return str_list
 
@@ -68,7 +70,8 @@ def extract_data(str, command):
     logger = getLogger('corautil.extract_data')
 
     resp_regex = re.compile(
-        r"\*" + command + r"(?:\s|,active\s|,ignore\s)\{\s(?P<response>.+|\B)\s\}\s",
+        r"\{\s(?P<response>.+|\B)\s\}",
+        # r"\*" + command + r"(?:\s|,active\s|,ignore\s)\{\s(?P<response>.+|\B)\s\}\s",
         flags=re.DOTALL
     )
     response = resp_regex.search(str)
