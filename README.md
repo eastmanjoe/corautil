@@ -6,8 +6,8 @@ Pure Python Wheels that are not “universal” are wheels that are pure python 
 
 To build the wheel:
 
-`python setup.py bdist_wheel`
-
+`pipenv run python setup.py sdist bdist_wheel`
+`pipenv run twine upload dist/*`
 
 `https://packaging.python.org/distributing/#wheels`
 
