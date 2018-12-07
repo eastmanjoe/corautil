@@ -11,13 +11,28 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
+import re
+
+here = path.abspath(path.dirname(__file__))
+
+
+def read(*parts):
+    with open(path.join(here, *parts), 'r') as fp:
+        return fp.read()
+
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
 
 # Get the long description from the README file
 with open(path.join(path.abspath(path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
-
-with open(path.join(path.realpath(path.dirname(__file__)), 'corautil/VERSION')) as version_file:
-    version = version_file.read().strip()
 
 setup(
     name='corautil',
@@ -25,7 +40,8 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=version,
+    # version=version,
+    version=find_version("corautil", "corautil.py"),
 
     description='Utility to allow the use of Campbell Scientific Cora script in Python',
     long_description=long_description,
@@ -53,7 +69,7 @@ setup(
         # 'Topic :: Software Development :: Build Tools',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: GNU GPLv3',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
@@ -67,7 +83,7 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    # packages=['corautil'],
+    package_dir={'corautil': 'corautil'},
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -91,9 +107,9 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    # package_data={
-    #     'sample': ['package_data.dat'],
-    # },
+    package_data={
+        'corautil': ['corautil/VERSION'],
+    },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:

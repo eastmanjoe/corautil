@@ -1,6 +1,10 @@
 # Include the license file
 include LICENSE
+graft corautil
+# include corautil/VERSION
 include corautil/VERSION
+
+# prune corautil/tests
 
 # If using Python 2.6 or less, then have to include package data, even though
 # it's already declared in setup.py
