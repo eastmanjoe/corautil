@@ -19,12 +19,11 @@ import re
 from datetime import datetime
 import time
 
-from .errors import CoraError
-from .utils import format_cora_backup_scripts, remove_quotes, extract_data
-from .device_settings import DeviceSettings
+from corautil.errors import CoraError
+from corautil.utils import format_cora_backup_scripts, remove_quotes, extract_data
+from corautil.device_settings import DeviceSettings
 
-with open(path.join(path.realpath(path.dirname(__file__)), 'VERSION')) as version_file:
-    __version__ = version_file.read().strip()
+__version__ = '1.0.2'
 
 logger = getLogger('corautil')
 
@@ -251,6 +250,35 @@ class CoraUtil:
 
         except CoraError:
             raise
+            
+    def get_file(self, station_name, filename, storage_location='CPU:', save_as='', save_path=''):
+        """
+        This command transfers a file from the datalogger's file system to your computer's file system.
+        
+        :param station_name:
+        :param storage_location:
+        :param save_as:
+        :return:
+        """
+        
+        if save_path == '':
+            save_path = os.getcwd()
+
+        try:
+            if path.exists(save_path):
+                if save_as != '':
+                    save_options = '{' + '--save-as={}'.format(path.join(path.abspath(save_path), save_as)) + '}'
+                    cora_output = self.execute_cora('get-file {} {} {};'.format(station_name, storage_location + filename, save_options))
+                else:
+                    cora_output = self.execute_cora('get-file {} {};'.format(station_name, storage_location + filename))
+
+                return True
+            else:
+                raise OSError(save_path)
+
+        except CoraError:
+            os.remove(filename)
+            raise
 
     def send_program_file(self, station_name, filepath, sending_os=False):
         try:
@@ -316,7 +344,7 @@ class CoraUtil:
         try:
             cora_output = self.execute_cora('list-tables {' + station_name + '};')
             self.logger.debug('cora_output is: {}'.format(cora_output))
-            return extract_data(cora_output, 'list-tables')
+            return remove_quotes(extract_data(cora_output, 'list-tables'))
 
         except CoraError:
             raise
@@ -529,7 +557,7 @@ if __name__ == '__main__':
 
     parser = ArgumentParser()
     parser.add_argument(
-        '--server_ip', help='ip address of the LoggerNet server', default='1.loggernet.draker.us'
+        '--server_ip', help='ip address of the LoggerNet server', default='7.loggernet.draker.us'
     )
     parser.add_argument(
         '--username', help='username for LoggerNet server', default='Joe'
@@ -586,15 +614,16 @@ if __name__ == '__main__':
     #     logger.info('{}'.format(record))
 
     # records = loggernet.data_query('__statistics__', 'draker_dealer-dot-com_std', '20170602', '20170603')
-    records = loggernet.data_query('__statistics__', 'sunwize_aspa-tafuna-10_std', '20170602', '20170603')
+    # records = loggernet.data_query('__statistics__', 'sunwize_aspa-tafuna-10_std', '20170602', '20170603')
 
-    for record in records:
-        logger.info('{}'.format(record))
+    # for record in records:
+    #     logger.info('{}'.format(record))
 
     # logger.info('{}'.format(loggernet.list_tables('__statistics__')))
     # logger.info('{}'.format(loggernet.list_files('draker_')))
 
     # table_list = loggernet.list_tables('draker')
+    table_list = loggernet.list_tables('p3088_01-chikunishi_mega_solar_nihondensetu-chikusei')
     # logger.info('{}'.format(table_list))
     # try:
     #     table_list.remove('Public')
