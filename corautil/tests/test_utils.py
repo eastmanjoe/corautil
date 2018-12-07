@@ -1,6 +1,7 @@
 import pytest
 from logging import getLogger, DEBUG, INFO
-from corautil.utils import extract_data
+
+from corautil.utils import extract_data, remove_quotes
 
 
 @pytest.mark.parametrize(('command', 'cora_output', 'response'),
@@ -74,10 +75,30 @@ from corautil.utils import extract_data
                                  '+get-device-setting\n'
                                  '+unlock-network\n',
                                  ['']
+                             ),
+                             (
+                                'list-tables',
+                                'CoraScript 1, 19, 01\n'
+                                '+connect,"coralib3.dll version 1, 11, 05"\n'
+                                '+lock-network\n'
+                                '*list-tables,p3088_01-chikunishi_mega_solar_nihondensetu-chikusei\n'
+                                '{\n'
+                                '"fifteenMin"\n'
+                                '"panelStatus"\n'
+                                '"Public"\n'
+                                '"Status"\n'
+                                '}\n'
+                                '+list-tables\n'
+                                '+unlock-network\n',
+                                [
+                                    '"fifteenMin"',
+                                    '"panelStatus"',
+                                    '"Public"',
+                                    '"Status"'
+                                ]
                              )
                          ]
                          )
-
 def test_extract_data(command, cora_output, response):
     logger = getLogger('test_device_settings')
     logger.setLevel(DEBUG)
@@ -86,3 +107,21 @@ def test_extract_data(command, cora_output, response):
     logger.debug('{}'.format(extracted_response))
 
     assert extracted_response == response
+
+
+# @pytest.mark.parametrize(('cora_output', 'string'),
+#                          [
+#                              'CoraScript 1, 19, 01\n'
+#                              '+connect,"coralib3.dll version 1, 11, 05"\n'
+#                              '+lock-network\n'
+#                              '*get-value\n'
+#                              '{\n'
+#                              '4,194,304\n'
+#                              '}\n'
+#                              '+get-value\n'
+#                              '+unlock-network\n'
+#                          ]
+#                          )
+# def test_remove_quotes():
+#     logger = getLogger('test_device_settings')
+#     logger.setLevel(DEBUG)
